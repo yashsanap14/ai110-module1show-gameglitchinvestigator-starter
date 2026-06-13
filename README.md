@@ -26,22 +26,22 @@ It wrote the code, ran away, and now the game is unplayable.
 ## 📝 Document Your Experience
 
 **Game Purpose:**
-Glitch Guesser is a number-guessing game where the player picks a difficulty (Easy, Normal, or Hard), then tries to guess a randomly chosen secret number within a limited number of attempts. After each guess the game gives a directional hint ("Go HIGHER" or "Go LOWER") and updates a running score. The catch: the code was intentionally shipped with several logic bugs, and the goal of this project is to find, explain, and fix them.
+Glitch Guesser is a number-guessing game where the player picks a difficulty (Easy, Normal, or Hard), then tries to guess a randomly chosen secret number within a limited number of attempts. After each guess the game gives a directional hint ("Go HIGHER" or "Go LOWER") and updates a running score. The code was intentionally shipped with several logic bugs, and the goal of this project is to find, explain, and fix them.
 
 **Bugs Found:**
 
 | Bug | Location | Description |
 |-----|----------|-------------|
-| Inverted hints | `check_guess` in `app.py` / `logic_utils.py` | `guess > secret` returned "Go HIGHER!" when it should say "Go LOWER!", and vice versa |
-| Hard range too easy | `get_range_for_difficulty` in `app.py` | Hard was `1–50`, a smaller range than Normal (`1–100`), making it easier not harder |
-| New Game ignores difficulty | `app.py` line 137 | New game always picked a secret from `randint(1, 100)` regardless of selected difficulty |
-| Info box hardcoded | `app.py` line 94 | Always displayed "Guess a number between 1 and 100" even on Easy (1–20) or Hard |
-| Even-attempt string cast | `app.py` lines 159–162 | On every even attempt the secret was cast to a string, causing lexicographic comparison (`"9" > "50"` = True) and wrong hints |
-| New Game didn't reset status/history | `app.py` new-game block | After a win or loss, clicking New Game left `status` and `history` in their old state |
+| Inverted hints | `check_guess` in `app.py` | `guess > secret` returned "Go HIGHER!" when it should say "Go LOWER!", and vice versa |
+| Hard range too easy | `get_range_for_difficulty` | Hard was `1–50`, a smaller range than Normal (`1–100`), making it easier not harder |
+| New Game ignores difficulty | `app.py` new-game block | Always picked a secret from `randint(1, 100)` regardless of selected difficulty |
+| Info box hardcoded | `app.py` info bar | Always displayed "between 1 and 100" even on Easy (1–20) or Hard |
+| Even-attempt string cast | `app.py` submit block | On every even attempt the secret was cast to a string, so `"9" > "50"` = True lexicographically, flipping the hint |
+| New Game didn't reset status/history | `app.py` new-game block | After a win or loss, `status` and `history` were not cleared, making the game unrestartable |
 
 **Fixes Applied:**
 
-1. Swapped the hint messages in `check_guess` and moved the function to `logic_utils.py`.
+1. Swapped the hint messages in `check_guess` (`"Go HIGHER!"` ↔ `"Go LOWER!"`) and moved the function to `logic_utils.py`.
 2. Changed Hard difficulty range from `1, 50` to `1, 500` in `get_range_for_difficulty`.
 3. Replaced `random.randint(1, 100)` in the New Game handler with `random.randint(low, high)` and added resets for `status` and `history`.
 4. Replaced the hardcoded info string with `f"Guess a number between {low} and {high}."`.
@@ -51,12 +51,12 @@ Glitch Guesser is a number-guessing game where the player picks a difficulty (Ea
 
 Sample game on **Normal** difficulty (secret = **63**, 8 attempts allowed):
 
-1. Player opens the app, selects **Normal** from the sidebar. The info bar shows "Guess a number between 1 and 100. Attempts left: 7."
-2. Player enters **40** → game returns "📉 Go LOWER" — wait, 40 < 63, so the game correctly returns **"📈 Go HIGHER!"** Score: −5 (too low penalty).
+1. Player selects **Normal** from the sidebar. The info bar shows "Guess a number between 1 and 100. Attempts left: 7."
+2. Player enters **40** → 40 < 63, game returns **"📈 Go HIGHER!"** Score: −5.
 3. Player enters **80** → 80 > 63, game returns **"📉 Go LOWER!"** Score: −10.
 4. Player enters **60** → 60 < 63, game returns **"📈 Go HIGHER!"** Score: −15.
 5. Player enters **65** → 65 > 63, game returns **"📉 Go LOWER!"** Score: −20.
-6. Player enters **63** → exact match, game returns **"🎉 Correct!"** and fires balloons. Score: 100 − 10 × (6 + 1) = **30** added → Final score: **10** (floored at 10 minimum).
+6. Player enters **63** → exact match, game returns **"🎉 Correct!"** and fires balloons. Win bonus of 30 points added (100 − 10 × 7, floored at 10). Final score: **10**.
 7. Status changes to `won`. The input and Submit button are locked. Player sees "You won! The secret was 63. Final score: 10."
 8. Player clicks **New Game 🔁** → attempts reset to 0, a new secret is drawn from 1–100 (Normal range), `status` resets to `"playing"`, history clears. Game is fully playable again.
 
